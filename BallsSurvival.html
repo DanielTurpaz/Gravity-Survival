@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gravity Survival</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="startScreen" class="screen-overlay">
+    <div class="start-background"></div>
+    <div class="start-content">
+        <div class="start-header">
+            <h1 class="game-title">Gravity Survival</h1>
+            <p class="game-subtitle">Outmaneuver the incoming enemies and survive as long as you can.</p>
+        </div>
+        <p id="lastRunInfo" class="last-run hidden"></p>
+        <div class="start-actions">
+            <div class="action-group primary-actions">
+                <button id="startBtn" class="primary-btn large-btn">▶ Start Game</button>
+            </div>
+            <div class="action-group game-settings">
+                <button id="difficultyBtn" class="secondary-btn">
+                    <span class="btn-icon">⚙️</span>
+                    Difficulty: <span id="difficultyLabel">Easy</span>
+                </button>
+                <button id="gameModeBtn" class="secondary-btn">
+                    <span class="btn-icon">👥</span>
+                    Mode: <span id="gameModeLabel">1 Player</span>
+                </button>
+                <button id="chaosModeBtn" class="secondary-btn">
+                    <span class="btn-icon">💥</span>
+                    Chaos Mode: <span id="chaosModeLabel">Off</span>
+                </button>
+            </div>
+            <div class="action-group menu-actions">
+                <button id="customizeBtn" class="secondary-btn">
+                    <span class="btn-icon">🎨</span> Customize
+                </button>
+                <button id="bestScoresBtn" class="secondary-btn">
+                    <span class="btn-icon">🏆</span> Best Scores
+                </button>
+                <button id="infoBtn" class="secondary-btn">
+                    <span class="btn-icon">ℹ️</span> Information
+                </button>
+                <button id="settingsBtn" class="secondary-btn">
+                    <span class="btn-icon">⚙️</span> Settings
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="customizeModal" class="modal hidden">
+    <div class="modal-content customize-content">
+        <h2>Customize</h2>
+        <div class="customize-scroll">
+            <div class="customize-section">
+                <h3>Player</h3>
+                <div id="playerSkinOptions" class="skin-options-by-difficulty"></div>
+            </div>
+            <div class="customize-section">
+                <h3>Enemies</h3>
+                <div id="enemySkinOptions" class="skin-options-by-difficulty"></div>
+            </div>
+        </div>
+        <button id="closeCustomizeBtn" class="primary-btn">Done</button>
+    </div>
+</div>
+
+<div id="bestScoresModal" class="modal hidden">
+    <div class="modal-content best-scores">
+        <h2>Best Scores</h2>
+        <ul id="bestScoresList" class="best-score-list"></ul>
+        <button id="closeBestScoresBtn" class="primary-btn">Close</button>
+    </div>
+</div>
+
+<div id="infoModal" class="modal hidden">
+    <div class="modal-content info-content">
+        <h2>Game Information</h2>
+        <div class="info-scroll">
+            <div class="info-section">
+                <h3>🎮 How to Play</h3>
+                <p>Survive as long as possible by dodging incoming enemy balls. Use WASD (Player 1) or Arrow Keys (Player 2) to move your character.</p>
+            </div>
+            <div class="info-section">
+                <h3>⚡ Power-Ups</h3>
+                <ul>
+                    <li><strong>🛡️ Shield</strong>: Protects you from one hit. Can stack up to 5 times.</li>
+                    <li><strong>⏱️ Slow Motion</strong>: Slows down enemies and game speed. Stacks up to 5 times.</li>
+                    <li><strong>⚡ Speed Boost</strong>: Increases your movement speed. Stacks up to 5 times.</li>
+                    <li><strong>❤️ Health</strong>: Restores 1 health point when collected.</li>
+                </ul>
+            </div>
+            <div class="info-section">
+                <h3>💥 Chaos Mode</h3>
+                <p>In Chaos Mode, when two enemy balls collide, there's a 30% chance a new ball spawns at the collision point. This creates exponential growth and makes the game significantly more challenging!</p>
+                <p><strong>Note:</strong> Chaos Mode scores are tracked separately from normal mode scores.</p>
+            </div>
+            <div class="info-section">
+                <h3>🎚️ Difficulty Levels</h3>
+                <ul>
+                    <li><strong>Easy</strong>: Slower enemies, longer spawn intervals, 3 health points</li>
+                    <li><strong>Medium</strong>: Moderate speed, balanced gameplay, 3 health points</li>
+                    <li><strong>Hard</strong>: Fast enemies, short spawn intervals, 3 health points</li>
+                </ul>
+            </div>
+            <div class="info-section">
+                <h3>🏆 Scoring</h3>
+                <p>Your score is based on survival time in seconds. Beat your best time for each difficulty level!</p>
+            </div>
+            <div class="info-section">
+                <h3>👥 Multiplayer Mode</h3>
+                <p>Play with a friend! Player 1 uses WASD, Player 2 uses Arrow Keys. Both players need to survive - the game ends when both die.</p>
+            </div>
+        </div>
+        <button id="closeInfoBtn" class="primary-btn">Close</button>
+    </div>
+</div>
+
+<div id="settingsModal" class="modal hidden">
+    <div class="modal-content settings-content">
+        <h2>Settings</h2>
+        <div class="settings-section">
+            <h3>Audio</h3>
+            <div class="setting-item">
+                <label>Master Volume: <span id="masterVolumeValue">100</span>%</label>
+                <input type="range" id="masterVolume" min="0" max="100" value="100" class="slider">
+            </div>
+            <div class="setting-item">
+                <label>Sound Effects: <span id="sfxVolumeValue">100</span>%</label>
+                <input type="range" id="sfxVolume" min="0" max="100" value="100" class="slider">
+            </div>
+            <div class="setting-item">
+                <label>Music: <span id="musicVolumeValue">70</span>%</label>
+                <input type="range" id="musicVolume" min="0" max="100" value="70" class="slider">
+            </div>
+        </div>
+        <div class="settings-section">
+            <h3>Visual</h3>
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="particlesEnabled" checked> Particle Effects
+                </label>
+            </div>
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="screenShakeEnabled" checked> Screen Shake
+                </label>
+            </div>
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="trailsEnabled" checked> Motion Trails
+                </label>
+            </div>
+        </div>
+        <div class="settings-section">
+            <h3>Statistics</h3>
+            <div id="statsDisplay" class="stats-display"></div>
+        </div>
+        <button id="closeSettingsBtn" class="primary-btn">Done</button>
+    </div>
+</div>
+
+<div id="pauseModal" class="modal hidden">
+    <div class="modal-content pause-content">
+        <h2>Paused</h2>
+        <div class="pause-buttons">
+            <button id="resumeBtn" class="primary-btn">Resume</button>
+            <button id="restartBtn" class="secondary-btn">Restart</button>
+            <button id="quitBtn" class="secondary-btn">Quit to Menu</button>
+        </div>
+    </div>
+</div>
+
+<div id="gameOverModal" class="modal hidden">
+    <div class="modal-content game-over-content">
+        <h2 id="gameOverTitle">Game Over</h2>
+        
+        <!-- Winner Display (Multiplayer) -->
+        <div id="winnerDisplay" class="winner-display hidden">
+            <h3 id="winnerText">Winner: Player 1</h3>
+        </div>
+        
+        <!-- Stats Container -->
+        <div class="game-over-stats">
+            <!-- Player 1 Stats -->
+            <div class="player-stats player1-stats">
+                <h3>Player 1</h3>
+                <div class="stat-item">
+                    <span class="stat-label">Survival Time:</span>
+                    <span class="stat-value" id="p1Time">0s</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Combo:</span>
+                    <span class="stat-value" id="p1Combo">0x</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Power-Ups:</span>
+                    <span class="stat-value" id="p1PowerUps">0</span>
+                </div>
+            </div>
+            
+            <!-- Player 2 Stats (Multiplayer) -->
+            <div class="player-stats player2-stats hidden" id="p2Stats">
+                <h3>Player 2</h3>
+                <div class="stat-item">
+                    <span class="stat-label">Survival Time:</span>
+                    <span class="stat-value" id="p2Time">0s</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Combo:</span>
+                    <span class="stat-value" id="p2Combo">0x</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Power-Ups:</span>
+                    <span class="stat-value" id="p2PowerUps">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <button id="closeGameOverBtn" class="primary-btn">Back to Menu</button>
+    </div>
+</div>
+
+<canvas id="canvas"></canvas>
+    <div id="ui">
+    <div id="player1UI" class="player-ui player1-ui">
+        <div class="timer-line">
+            P1: <span id="time">0</span>s · <span id="difficultyIndicator">Easy</span>
+        </div>
+        <div>Best: <span id="best">0</span>s</div>
+        <div id="healthBar" class="health-bar hidden">
+            <div class="health-label">P1 Health:</div>
+            <div class="health-container">
+                <div id="healthFill" class="health-fill"></div>
+            </div>
+        </div>
+        <div id="powerUpIndicatorsP1" class="powerup-indicators"></div>
+        <div id="comboDisplay" class="combo-display hidden">
+            <span id="comboText">Combo: <span id="comboCount">0</span>x</span>
+        </div>
+    </div>
+    <div id="player2UI" class="player-ui player2-ui hidden">
+        <div class="timer-line">
+            P2: <span id="timeP2">0</span>s
+        </div>
+        <div>Best: <span id="bestP2">0</span>s</div>
+        <div id="healthBarP2" class="health-bar hidden">
+            <div class="health-label">P2 Health:</div>
+            <div class="health-container">
+                <div id="healthFillP2" class="health-fill"></div>
+            </div>
+        </div>
+        <div id="powerUpIndicatorsP2" class="powerup-indicators"></div>
+        <div id="comboDisplayP2" class="combo-display hidden">
+            <span id="comboTextP2">Combo: <span id="comboCountP2">0</span>x</span>
+        </div>
+    </div>
+</div>
+
+<script src="game.js" defer></script>
+</body>
+</html>
