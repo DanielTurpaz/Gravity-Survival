@@ -19,7 +19,7 @@ Dodge incoming enemy balls and survive as long as possible! The game features:
 
 ## 🚀 Getting Started
 
-Simply open `BallsSurvival.html` in your web browser to play. No installation or setup required!
+Simply open `index.html` in your web browser to play. No installation or setup required!
 
 ## 📋 Features
 
