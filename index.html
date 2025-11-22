@@ -123,42 +123,44 @@
 <div id="settingsModal" class="modal hidden">
     <div class="modal-content settings-content">
         <h2>Settings</h2>
-        <div class="settings-section">
-            <h3>Audio</h3>
-            <div class="setting-item">
-                <label>Master Volume: <span id="masterVolumeValue">100</span>%</label>
-                <input type="range" id="masterVolume" min="0" max="100" value="100" class="slider">
+        <div class="settings-scroll">
+            <div class="settings-section">
+                <h3>Audio</h3>
+                <div class="setting-item">
+                    <label>Master Volume: <span id="masterVolumeValue">100</span>%</label>
+                    <input type="range" id="masterVolume" min="0" max="100" value="100" class="slider">
+                </div>
+                <div class="setting-item">
+                    <label>Sound Effects: <span id="sfxVolumeValue">100</span>%</label>
+                    <input type="range" id="sfxVolume" min="0" max="100" value="100" class="slider">
+                </div>
+                <div class="setting-item">
+                    <label>Music: <span id="musicVolumeValue">70</span>%</label>
+                    <input type="range" id="musicVolume" min="0" max="100" value="70" class="slider">
+                </div>
             </div>
-            <div class="setting-item">
-                <label>Sound Effects: <span id="sfxVolumeValue">100</span>%</label>
-                <input type="range" id="sfxVolume" min="0" max="100" value="100" class="slider">
+            <div class="settings-section">
+                <h3>Visual</h3>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="particlesEnabled" checked> Particle Effects
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="screenShakeEnabled" checked> Screen Shake
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="trailsEnabled" checked> Motion Trails
+                    </label>
+                </div>
             </div>
-            <div class="setting-item">
-                <label>Music: <span id="musicVolumeValue">70</span>%</label>
-                <input type="range" id="musicVolume" min="0" max="100" value="70" class="slider">
+            <div class="settings-section">
+                <h3>Statistics</h3>
+                <div id="statsDisplay" class="stats-display"></div>
             </div>
-        </div>
-        <div class="settings-section">
-            <h3>Visual</h3>
-            <div class="setting-item">
-                <label>
-                    <input type="checkbox" id="particlesEnabled" checked> Particle Effects
-                </label>
-            </div>
-            <div class="setting-item">
-                <label>
-                    <input type="checkbox" id="screenShakeEnabled" checked> Screen Shake
-                </label>
-            </div>
-            <div class="setting-item">
-                <label>
-                    <input type="checkbox" id="trailsEnabled" checked> Motion Trails
-                </label>
-            </div>
-        </div>
-        <div class="settings-section">
-            <h3>Statistics</h3>
-            <div id="statsDisplay" class="stats-display"></div>
         </div>
         <button id="closeSettingsBtn" class="primary-btn">Done</button>
     </div>

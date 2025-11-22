@@ -154,6 +154,13 @@
 
     // Mobile scaling factor for game elements (make them smaller on mobile)
     const MOBILE_SCALE = isMobile ? 0.7 : 1.0; // 70% size on mobile
+    // Mobile speed scaling (make everything move slower on mobile)
+    const MOBILE_SPEED_SCALE = isMobile ? 0.75 : 1.0; // 75% speed on mobile
+    
+    // Apply mobile scaling to CONFIG
+    if (isMobile) {
+        CONFIG.spawnOffset *= MOBILE_SCALE;
+    }
 
     // Joystick state
     const joystick = {
@@ -1791,21 +1798,35 @@
             playerBall.x = Math.min(playerBall.x, domElements.canvas.width - playerBall.radius);
             playerBall.y = Math.min(playerBall.y, domElements.canvas.height - playerBall.radius);
         }
-        // Update joystick position on resize
-        if (isMobile && domElements.joystickContainer) {
-            initJoystickPosition();
+        // Update joystick position on resize if active
+        if (isMobile && domElements.joystickContainer && joystick.active) {
+            positionJoystickAtTouch(joystick.baseX, joystick.baseY);
         }
     }
 
-    // Initialize joystick position (center-bottom)
-    function initJoystickPosition() {
+    // Position joystick at touch location (dynamic)
+    function positionJoystickAtTouch(x, y) {
         if (!domElements.joystickContainer) return;
-        const padding = 60;
-        const baseX = window.innerWidth / 2; // Center horizontally
-        const baseY = window.innerHeight - padding - joystick.radius;
         
-        domElements.joystickContainer.style.left = `${baseX - joystick.radius}px`;
-        domElements.joystickContainer.style.top = `${baseY - joystick.radius}px`;
+        // Position container so center is at touch point
+        const baseX = x;
+        const baseY = y;
+        
+        // Ensure joystick stays within screen bounds
+        const minX = joystick.radius;
+        const maxX = window.innerWidth - joystick.radius;
+        const minY = joystick.radius;
+        const maxY = window.innerHeight - joystick.radius;
+        
+        const clampedX = Math.max(minX, Math.min(maxX, baseX));
+        const clampedY = Math.max(minY, Math.min(maxY, baseY));
+        
+        domElements.joystickContainer.style.left = `${clampedX - joystick.radius}px`;
+        domElements.joystickContainer.style.top = `${clampedY - joystick.radius}px`;
+        
+        // Store the base position for calculations
+        joystick.baseX = clampedX;
+        joystick.baseY = clampedY;
         
         // Reset stick position (centered)
         if (domElements.joystickStick) {
@@ -1816,9 +1837,8 @@
     // Show/hide joystick based on mobile detection
     function setupJoystick() {
         if (isMobile && domElements.joystickContainer) {
-            // Initially hidden, will show when game starts
+            // Initially hidden, will appear at touch location
             domElements.joystickContainer.classList.add('hidden');
-            initJoystickPosition();
         } else if (domElements.joystickContainer) {
             domElements.joystickContainer.classList.add('hidden');
         }
@@ -1996,12 +2016,9 @@
     function updateJoystick(x, y) {
         if (!domElements.joystickContainer) return;
         
-        const containerRect = domElements.joystickContainer.getBoundingClientRect();
-        const centerX = containerRect.left + containerRect.width / 2;
-        const centerY = containerRect.top + containerRect.height / 2;
-        
-        const dx = x - centerX;
-        const dy = y - centerY;
+        // Calculate distance from base position
+        const dx = x - joystick.baseX;
+        const dy = y - joystick.baseY;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
         let stickX, stickY;
@@ -2034,6 +2051,11 @@
     function resetJoystick() {
         joystick.active = false;
         
+        // Hide joystick when not in use
+        if (domElements.joystickContainer) {
+            domElements.joystickContainer.classList.add('hidden');
+        }
+        
         if (domElements.joystickStick) {
             domElements.joystickStick.style.transform = 'translate(-50%, -50%)';
         }
@@ -2045,47 +2067,49 @@
         keys.d = false;
     }
 
-    // Touch event handlers
-    if (isMobile && domElements.joystickContainer) {
-        domElements.joystickContainer.addEventListener('touchstart', (e) => {
-            if (!gameState.playing || gameState.paused) return;
+    // Touch event handlers - joystick appears wherever user touches
+    if (isMobile && domElements.joystickContainer && domElements.canvas) {
+        // Handle touch on canvas - joystick appears at touch location
+        domElements.canvas.addEventListener('touchstart', (e) => {
+            if (!gameState.playing || gameState.paused) {
+                e.preventDefault();
+                return;
+            }
             e.preventDefault();
             const pos = getTouchPos(e);
+            
+            // Position joystick at touch location and show it
+            positionJoystickAtTouch(pos.x, pos.y);
+            domElements.joystickContainer.classList.remove('hidden');
             joystick.active = true;
             updateJoystick(pos.x, pos.y);
         }, { passive: false });
 
-        domElements.joystickContainer.addEventListener('touchmove', (e) => {
-            if (!joystick.active || !gameState.playing || gameState.paused) return;
+        domElements.canvas.addEventListener('touchmove', (e) => {
+            if (!gameState.playing || gameState.paused) {
+                e.preventDefault();
+                return;
+            }
             e.preventDefault();
-            const pos = getTouchPos(e);
-            updateJoystick(pos.x, pos.y);
+            if (joystick.active) {
+                const pos = getTouchPos(e);
+                updateJoystick(pos.x, pos.y);
+            }
         }, { passive: false });
 
-        domElements.joystickContainer.addEventListener('touchend', (e) => {
-            e.preventDefault();
+        domElements.canvas.addEventListener('touchend', (e) => {
+            if (gameState.playing && !gameState.paused) {
+                e.preventDefault();
+            }
             resetJoystick();
         }, { passive: false });
 
-        domElements.joystickContainer.addEventListener('touchcancel', (e) => {
-            e.preventDefault();
+        domElements.canvas.addEventListener('touchcancel', (e) => {
+            if (gameState.playing && !gameState.paused) {
+                e.preventDefault();
+            }
             resetJoystick();
         }, { passive: false });
-
-        // Also handle touch events on canvas to prevent scrolling
-        if (domElements.canvas) {
-            domElements.canvas.addEventListener('touchstart', (e) => {
-                if (gameState.playing && !gameState.paused) {
-                    e.preventDefault();
-                }
-            }, { passive: false });
-
-            domElements.canvas.addEventListener('touchmove', (e) => {
-                if (gameState.playing && !gameState.paused) {
-                    e.preventDefault();
-                }
-            }, { passive: false });
-        }
     }
 
     if (domElements.startBtn) {
@@ -2439,8 +2463,8 @@
             x: spawnX,
             y: spawnY,
             radius: newRadius,
-            vx: combinedVx + (Math.random() - 0.5) * 2, // Add some randomness
-            vy: combinedVy + (Math.random() - 0.5) * 2,
+            vx: (combinedVx + (Math.random() - 0.5) * 2) * MOBILE_SPEED_SCALE, // Apply mobile speed scaling
+            vy: (combinedVy + (Math.random() - 0.5) * 2) * MOBILE_SPEED_SCALE,
             isPlayer: false,
             skin: newSkin,
             enemyType: newEnemyType,
@@ -2568,16 +2592,16 @@
         const rand = Math.random();
         let enemyType = 'normal';
         let radius = CONFIG.particleRadius;
-        let speedMultiplier = CONFIG.enemySpeedMultiplier;
+        let speedMultiplier = CONFIG.enemySpeedMultiplier * MOBILE_SPEED_SCALE; // Apply mobile speed scaling
         
         if (rand < 0.15) {
             enemyType = 'slow';
             radius = CONFIG.particleRadius * 1.5;
-            speedMultiplier = CONFIG.enemySpeedMultiplier * 0.6;
+            speedMultiplier = CONFIG.enemySpeedMultiplier * 0.6 * MOBILE_SPEED_SCALE;
         } else if (rand < 0.4) {
             enemyType = 'fast';
             radius = CONFIG.particleRadius * 0.7;
-            speedMultiplier = CONFIG.enemySpeedMultiplier * 1.5;
+            speedMultiplier = CONFIG.enemySpeedMultiplier * 1.5 * MOBILE_SPEED_SCALE;
         }
 
         particles.push({
@@ -3117,7 +3141,7 @@
         if (playerBall && gameState.playing) {
             let targetVx = 0;
             let targetVy = 0;
-            let moveSpeed = CONFIG.moveSpeed;
+            let moveSpeed = CONFIG.moveSpeed * MOBILE_SPEED_SCALE; // Apply mobile speed scaling
             
             // Apply speed boost (stackable: +50% per stack, max 3x)
             const speedStack = gameState.powerUpStacks.speed;
@@ -3152,7 +3176,7 @@
         if (player2Ball && gameState.playing && gameMode === 'multiplayer' && !gameState.player2Dead) {
             let targetVx = 0;
             let targetVy = 0;
-            let moveSpeed = CONFIG.moveSpeed;
+            let moveSpeed = CONFIG.moveSpeed * MOBILE_SPEED_SCALE; // Apply mobile speed scaling
             
             // Apply speed boost for Player 2
             const speedStack = gameState.powerUpStacksP2.speed;
@@ -3222,7 +3246,7 @@
                         (targetPlayer === player2Ball && !gameState.player2Dead)) {
                         if (distanceSquared > 0) {
                             const distance = Math.sqrt(distanceSquared);
-                            const force = CONFIG.gravityStrength / (distanceSquared + 1);
+                            const force = (CONFIG.gravityStrength * MOBILE_SPEED_SCALE) / (distanceSquared + 1);
                             const forceX = (dx / distance) * force;
                             const forceY = (dy / distance) * force;
                             p.vx += forceX * timeScale;
