@@ -83,6 +83,7 @@
             <div class="info-section">
                 <h3>🎮 How to Play</h3>
                 <p>Survive as long as possible by dodging incoming enemy balls. Use WASD (Player 1) or Arrow Keys (Player 2) to move your character.</p>
+                <p><strong>📱 Mobile:</strong> Use the virtual joystick in the bottom-left corner to control your character.</p>
             </div>
             <div class="info-section">
                 <h3>⚡ Power-Ups</h3>
@@ -225,6 +226,11 @@
 </div>
 
 <canvas id="canvas"></canvas>
+    <!-- Mobile Joystick -->
+    <div id="joystickContainer" class="joystick-container hidden">
+        <div id="joystickBase" class="joystick-base"></div>
+        <div id="joystickStick" class="joystick-stick"></div>
+    </div>
     <div id="ui">
     <div id="player1UI" class="player-ui player1-ui">
         <div class="timer-line">

@@ -68,7 +68,10 @@
         winnerDisplay: document.getElementById('winnerDisplay'),
         winnerText: document.getElementById('winnerText'),
         p2Stats: document.getElementById('p2Stats'),
-        closeGameOverBtn: document.getElementById('closeGameOverBtn')
+        closeGameOverBtn: document.getElementById('closeGameOverBtn'),
+        joystickContainer: document.getElementById('joystickContainer'),
+        joystickBase: document.getElementById('joystickBase'),
+        joystickStick: document.getElementById('joystickStick')
     };
 
     if (domElements.canvas) {
@@ -138,6 +141,30 @@
 
     const keys = { w: false, a: false, s: false, d: false };
     const keysP2 = { up: false, left: false, down: false, right: false };
+
+    // Mobile detection
+    function isMobileDevice() {
+        const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        const isSmallScreen = window.innerWidth < 768 || window.innerHeight < 768;
+        const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        return hasTouch && (isSmallScreen || isMobileUA);
+    }
+
+    const isMobile = isMobileDevice();
+
+    // Joystick state
+    const joystick = {
+        active: false,
+        x: 0,
+        y: 0,
+        baseX: 0,
+        baseY: 0,
+        stickX: 0,
+        stickY: 0,
+        radius: 50, // Base radius
+        stickRadius: 25, // Stick radius
+        maxDistance: 50 // Max distance stick can move from center
+    };
 
     let difficultyIndex = 0;
     let bestTimes = loadBestTimes();
@@ -914,6 +941,11 @@
         }
         if (domElements.powerUpIndicatorsP1) {
             domElements.powerUpIndicatorsP1.innerHTML = '';
+        }
+        // Hide joystick when returning to menu
+        if (isMobile && domElements.joystickContainer) {
+            domElements.joystickContainer.classList.add('hidden');
+            resetJoystick();
         }
         if (domElements.powerUpIndicatorsP2) {
             domElements.powerUpIndicatorsP2.innerHTML = '';
@@ -1756,12 +1788,46 @@
             playerBall.x = Math.min(playerBall.x, domElements.canvas.width - playerBall.radius);
             playerBall.y = Math.min(playerBall.y, domElements.canvas.height - playerBall.radius);
         }
+        // Update joystick position on resize
+        if (isMobile && domElements.joystickContainer) {
+            initJoystickPosition();
+        }
+    }
+
+    // Initialize joystick position
+    function initJoystickPosition() {
+        if (!domElements.joystickContainer) return;
+        const padding = 60;
+        const baseX = padding + joystick.radius;
+        const baseY = window.innerHeight - padding - joystick.radius;
+        
+        domElements.joystickContainer.style.left = `${baseX - joystick.radius}px`;
+        domElements.joystickContainer.style.top = `${baseY - joystick.radius}px`;
+        
+        // Reset stick position (centered)
+        if (domElements.joystickStick) {
+            domElements.joystickStick.style.transform = 'translate(-50%, -50%)';
+        }
+    }
+
+    // Show/hide joystick based on mobile detection
+    function setupJoystick() {
+        if (isMobile && domElements.joystickContainer) {
+            // Initially hidden, will show when game starts
+            domElements.joystickContainer.classList.add('hidden');
+            initJoystickPosition();
+        } else if (domElements.joystickContainer) {
+            domElements.joystickContainer.classList.add('hidden');
+        }
     }
 
     if (domElements.canvas) {
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
     }
+
+    // Setup joystick for mobile
+    setupJoystick();
 
     loadStats();
     loadSettings();
@@ -1843,14 +1909,14 @@
             return;
         }
 
-        // Player 1 controls (WASD)
-        if (key in keys) {
+        // Player 1 controls (WASD) - disabled on mobile
+        if (!isMobile && key in keys) {
             keys[key] = true;
             event.preventDefault();
         }
         
-        // Player 2 controls (Arrow keys)
-        if (gameMode === 'multiplayer' && gameState.playing) {
+        // Player 2 controls (Arrow keys) - disabled on mobile
+        if (!isMobile && gameMode === 'multiplayer' && gameState.playing) {
             if (event.key === 'ArrowUp') {
                 keysP2.up = true;
                 event.preventDefault();
@@ -1869,13 +1935,14 @@
 
     document.addEventListener('keyup', (event) => {
         const key = event.key.toLowerCase();
-        if (key in keys) {
+        // Disable keyboard controls on mobile
+        if (!isMobile && key in keys) {
             keys[key] = false;
             event.preventDefault();
         }
         
-        // Player 2 controls (Arrow keys)
-        if (gameMode === 'multiplayer') {
+        // Player 2 controls (Arrow keys) - disabled on mobile
+        if (!isMobile && gameMode === 'multiplayer') {
             if (event.key === 'ArrowUp') {
                 keysP2.up = false;
                 event.preventDefault();
@@ -1891,6 +1958,113 @@
             }
         }
     });
+
+    // ============================================
+    // TOUCH/JOYSTICK HANDLERS (MOBILE)
+    // ============================================
+
+    function getTouchPos(e) {
+        const touch = e.touches ? e.touches[0] : e;
+        return {
+            x: touch.clientX,
+            y: touch.clientY
+        };
+    }
+
+    function updateJoystick(x, y) {
+        if (!domElements.joystickContainer) return;
+        
+        const containerRect = domElements.joystickContainer.getBoundingClientRect();
+        const centerX = containerRect.left + containerRect.width / 2;
+        const centerY = containerRect.top + containerRect.height / 2;
+        
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        let stickX, stickY;
+        if (distance > joystick.maxDistance) {
+            const angle = Math.atan2(dy, dx);
+            stickX = Math.cos(angle) * joystick.maxDistance;
+            stickY = Math.sin(angle) * joystick.maxDistance;
+        } else {
+            stickX = dx;
+            stickY = dy;
+        }
+        
+        // Update visual position (combine centering with offset)
+        if (domElements.joystickStick) {
+            domElements.joystickStick.style.transform = `translate(-50%, -50%) translate(${stickX}px, ${stickY}px)`;
+        }
+        
+        // Calculate normalized direction (-1 to 1)
+        const normalizedDx = stickX / joystick.maxDistance;
+        const normalizedDy = stickY / joystick.maxDistance;
+        
+        // Update keys based on joystick position (dead zone of 0.1)
+        const deadZone = 0.1;
+        keys.w = normalizedDy < -deadZone;
+        keys.s = normalizedDy > deadZone;
+        keys.a = normalizedDx < -deadZone;
+        keys.d = normalizedDx > deadZone;
+    }
+
+    function resetJoystick() {
+        joystick.active = false;
+        
+        if (domElements.joystickStick) {
+            domElements.joystickStick.style.transform = 'translate(-50%, -50%)';
+        }
+        
+        // Reset keys
+        keys.w = false;
+        keys.s = false;
+        keys.a = false;
+        keys.d = false;
+    }
+
+    // Touch event handlers
+    if (isMobile && domElements.joystickContainer) {
+        domElements.joystickContainer.addEventListener('touchstart', (e) => {
+            if (!gameState.playing || gameState.paused) return;
+            e.preventDefault();
+            const pos = getTouchPos(e);
+            joystick.active = true;
+            updateJoystick(pos.x, pos.y);
+        }, { passive: false });
+
+        domElements.joystickContainer.addEventListener('touchmove', (e) => {
+            if (!joystick.active || !gameState.playing || gameState.paused) return;
+            e.preventDefault();
+            const pos = getTouchPos(e);
+            updateJoystick(pos.x, pos.y);
+        }, { passive: false });
+
+        domElements.joystickContainer.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            resetJoystick();
+        }, { passive: false });
+
+        domElements.joystickContainer.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+            resetJoystick();
+        }, { passive: false });
+
+        // Also handle touch events on canvas to prevent scrolling
+        if (domElements.canvas) {
+            domElements.canvas.addEventListener('touchstart', (e) => {
+                if (gameState.playing && !gameState.paused) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            domElements.canvas.addEventListener('touchmove', (e) => {
+                if (gameState.playing && !gameState.paused) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        }
+    }
 
     if (domElements.startBtn) {
         domElements.startBtn.addEventListener('click', (e) => {
@@ -2590,6 +2764,12 @@
         Object.keys(keysP2).forEach((key) => {
             keysP2[key] = false;
         });
+        
+        // Show joystick on mobile when game starts
+        if (isMobile && domElements.joystickContainer) {
+            domElements.joystickContainer.classList.remove('hidden');
+            resetJoystick();
+        }
 
         // Start background music based on difficulty
         const diff = getCurrentDifficulty();
