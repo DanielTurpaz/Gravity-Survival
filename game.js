@@ -152,6 +152,9 @@
 
     const isMobile = isMobileDevice();
 
+    // Mobile scaling factor for game elements (make them smaller on mobile)
+    const MOBILE_SCALE = isMobile ? 0.7 : 1.0; // 70% size on mobile
+
     // Joystick state
     const joystick = {
         active: false,
@@ -612,7 +615,7 @@
         powerUps.push({
             x, y,
             type: type.id,
-            radius: 15,
+            radius: 15 * MOBILE_SCALE,
             color: type.color,
             icon: type.icon,
             rotation: 0,
@@ -1794,11 +1797,11 @@
         }
     }
 
-    // Initialize joystick position
+    // Initialize joystick position (center-bottom)
     function initJoystickPosition() {
         if (!domElements.joystickContainer) return;
         const padding = 60;
-        const baseX = padding + joystick.radius;
+        const baseX = window.innerWidth / 2; // Center horizontally
         const baseY = window.innerHeight - padding - joystick.radius;
         
         domElements.joystickContainer.style.left = `${baseX - joystick.radius}px`;
@@ -1828,6 +1831,25 @@
 
     // Setup joystick for mobile
     setupJoystick();
+
+    // Auto-focus window/canvas on load
+    function focusWindow() {
+        if (domElements.canvas) {
+            domElements.canvas.focus();
+        }
+        window.focus();
+    }
+    
+    // Focus on load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', focusWindow);
+    } else {
+        focusWindow();
+    }
+    
+    // Also focus when user clicks anywhere
+    document.addEventListener('click', focusWindow, { once: false });
+    document.addEventListener('touchstart', focusWindow, { once: false });
 
     loadStats();
     loadSettings();
@@ -2329,7 +2351,7 @@
         return {
             x: domElements.canvas.width / 2 - 30,
             y: domElements.canvas.height / 2,
-            radius: CONFIG.particleRadius,
+            radius: CONFIG.particleRadius * MOBILE_SCALE,
             vy: 0,
             vx: 0,
             isPlayer: true,
@@ -2342,7 +2364,7 @@
         return {
             x: domElements.canvas.width / 2 + 30,
             y: domElements.canvas.height / 2,
-            radius: CONFIG.particleRadius,
+            radius: CONFIG.particleRadius * MOBILE_SCALE,
             vy: 0,
             vx: 0,
             isPlayer: true,
@@ -2396,8 +2418,8 @@
         
         // Calculate new ball properties
         const avgRadius = (p1.radius + p2.radius) / 2;
-        const newRadius = Math.max(CONFIG.particleRadius * 0.5, 
-                                   Math.min(CONFIG.particleRadius * 1.5, avgRadius));
+        const newRadius = Math.max(CONFIG.particleRadius * 0.5 * MOBILE_SCALE, 
+                                   Math.min(CONFIG.particleRadius * 1.5 * MOBILE_SCALE, avgRadius));
         
         // Combined velocity (vector sum)
         const combinedVx = (p1.vx + p2.vx) * 0.6; // Dampened
@@ -2561,7 +2583,7 @@
         particles.push({
             x,
             y,
-            radius: radius,
+            radius: radius * MOBILE_SCALE,
             vy: (Math.random() - 0.5) * 4 * speedMultiplier,
             vx: (Math.random() - 0.5) * 10 * speedMultiplier,
             isPlayer: false,
